@@ -100,6 +100,8 @@ def train(config):
     Batch size:      {config.batch_size}
     Learning rate:   {config.lr}
     Training size:   {n_train}
+    Benign sampels:   {pos_weight}
+    Malignant sampels:   {n_malignant}
     Validation size: {n_val}
     Device:          {device.type}
     Images scaling:  {train_loader.dataset.imgs[0].shape}
@@ -142,7 +144,7 @@ def train(config):
           global_step += 1
           epoch_loss += loss.item()
 
-    auc_result, f1_score_result, accuracy_result, _ , _ = evaluate(model,device,config, val_loader,
+    auc_result, f1_score_result, accuracy_result, _ , _,_ = evaluate(model,device,config, val_loader,
                                               sigmoid, threshoulding, metrics=[auc_object,f1_score])
     scheduler.step(f1_score_result)
     logging.info(f'F1 score: {f1_score_result:.3f} \t AUC score: {auc_result:.3f} \t acc score: {accuracy_result:.3f}')
@@ -154,7 +156,7 @@ def train(config):
     if auc_result > best_AUC_metric:
       best_AUC_metric = auc_result
     if accuracy_result > best_acc_metric:
-      best_acc_metric = auc_result
+      best_acc_metric = accuracy_result
 
     experiment.log({
         'train loss': epoch_loss,
@@ -165,18 +167,22 @@ def train(config):
         'accuracy_result':np.round(accuracy_result,3) ,
 
     })
-    
+  
+  split_type = config.log_pred_type
   dataset = NoduleMNIST3D(split=split_type, download=True, as_rgb=config.as_rgb)
-  model.load_state_dict(torch.load(model_path))
+  model.load_state_dict(torch.load(saved_model_path))
   loader = DataLoader(dataset,batch_size=config.batch_size, num_workers=os.cpu_count() )
-  auc_result, f1_score_result, accuracy_result, y, y_pred = evaluate(model,device,config, loader,sigmoid, threshoulding, metrics=[auc_object,f1_score])
+  auc_result, f1_score_result, accuracy_result, y, y_pred, y_pred_labels = evaluate(model,device,config, loader,sigmoid, threshoulding, metrics=[auc_object,f1_score])
   if config.log_preds:
-    split_type = config.log_pred_type
+    # pass
     # print(split_type)
-    creatPredictionTable(config, loader, y, y_pred)
+    creatPredictionTable(config, loader, y, y_pred_labels)
     
-  wandb.log({"roc_curve" : wandb.plot.roc_curve(y, y_pred, labels=['Benign','Malignant'])})
-  creatConfutionMatrix(y, y_pred)
+  # print(y)
+  # print(y_pred)
+
+  # wandb.log({"roc_curve" : wandb.plot.roc_curve(y, y_pred, labels=['Benign','Malignant'])})
+  creatConfutionMatrix(y, y_pred_labels)
   logBestMertics(best_f1_score_metric, best_AUC_metric, best_acc_metric )
   logTraindModel(saved_model_path, config)
   wandb.finish()

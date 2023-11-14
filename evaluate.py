@@ -5,7 +5,7 @@ import wandb
 from sklearn.metrics import accuracy_score, f1_score
 from torch import optim
 from medmnist import NoduleMNIST3D
-from utils import getNetworkArch, creatPredictionTableAndConfutionMatrix
+from utils import getNetworkArch,  creatConfutionMatrix, creatPredictionTable
 from monai.data import DataLoader
 from monai.metrics import ROCAUCMetric
 from monai.transforms import Activations, AsDiscrete
@@ -44,14 +44,16 @@ def evaluate(model, device, config, val_loader,sigmoid, threshoulding, metrics):
     auc_result = auc_object.aggregate()
     auc_object.reset()
     
-    y_pred= threshoulding(y_pred)
-    acc_value = torch.eq(y_pred, y)
+    y_pred_labels= threshoulding(y_pred)
+    acc_value = torch.eq(y_pred_labels, y)
     acc_results= acc_value.sum().item() / len(acc_value)
     y = y.squeeze().cpu().numpy()
     y_pred = y_pred.cpu().numpy()
-    f1_score_result = f1_score(y , y_pred)
+    y_pred_labels = y_pred_labels.cpu().numpy()
+
+    f1_score_result = f1_score(y , y_pred_labels)
     model.train()
-  return auc_result, f1_score_result, acc_results, y, y_pred
+  return auc_result, f1_score_result, acc_results, y, y_pred, y_pred_labels
 
 def init(model_name):
   run = wandb.init(project='NoduleMNIST', entity='saied-salem',
@@ -78,8 +80,12 @@ def init(model_name):
 
   dataset = NoduleMNIST3D(split='test', download=True, as_rgb=config.as_rgb)
   loader = DataLoader(dataset,batch_size=config.batch_size, num_workers=os.cpu_count() )
-  auc_result, f1_score_result, accuracy_result, y, y_pred = evaluate(model,device,config, loader, sigmoid, threshoulding, metrics=[auc_object,f1_score])
-  creatPredictionTableAndConfutionMatrix(config, loader, y, y_pred)
+  auc_result, f1_score_result, accuracy_result, y, y_pred, y_pred_labels = evaluate(model,device,config, loader, sigmoid, threshoulding, metrics=[auc_object,f1_score])
+
+  creatPredictionTable(config, loader, y, y_pred_labels)
+  creatConfutionMatrix(y, y_pred_labels)
+
+  # wandb.log({"roc_curve" : wandb.plot.roc_curve(y, y_pred, labels=['Benign','Malignant'])})
   run.log({
         'AUC_score': auc_result,
         'F1_score': f1_score_result,
