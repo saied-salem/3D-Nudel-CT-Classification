@@ -1,0 +1,18 @@
+
+{
+    "framework": "pytorch",
+    "batch_size": 256,
+    "augment": true,
+    "epochs": 50,
+    "lr": 1e-3,
+    "mixed_precision": true,
+    "arch": "SEResNet50",
+    "optimizer": "AdamW",
+    "seed": 42,
+    "log_preds":true,
+    "log_pred_type": "val",
+    "as_rgb": true,
+    "weighted_loss": false,
+    "scheduler_reducing_factor": 0.8,
+    "scheduler_lr_patience": 4
+}
