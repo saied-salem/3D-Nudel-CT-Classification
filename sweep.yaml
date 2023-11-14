@@ -11,7 +11,7 @@ parameters:
   arch:
 
     values:
-      - 'EfficientNet'
+      - 'EfficientNetBN'
       - 'resnet10'
       - 'resnet18'
       - 'resnet34'

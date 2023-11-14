@@ -97,11 +97,14 @@ def getNetworkArch(arch_name,input_channels):
   input_channel_names = ['n_input_channels', 'in_channels' ]
   output_class_names = ['num_classes']
   network= None
-  
-  try:
+ 
+  if 'EfficientNet' in arch_name :
+    network=getattr(nets, arch_name)(model_name=arch_name, spatial_dims= 3, in_channels= input_channels, num_classes=1)
+  elif 'SER' in arch_name:
     network=getattr(nets, arch_name)(spatial_dims= 3, in_channels= input_channels, num_classes=1)
-  except:
+  else:
     network= getattr(nets, arch_name)(spatial_dims= 3, n_input_channels= input_channels, num_classes=1)
+
   return network
 
 
