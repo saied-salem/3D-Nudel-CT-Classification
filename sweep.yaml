@@ -1,5 +1,5 @@
 
-program: train.py
+program: Run.py
 
 method: random
 
@@ -26,8 +26,8 @@ parameters:
       
   batch_size:
     distribution: int_uniform
-    max: 32
-    min: 256
+    min: 32
+    max: 256
     
   lr:
     distribution: log_uniform_values

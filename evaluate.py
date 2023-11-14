@@ -88,6 +88,9 @@ def init(model_name):
   wandb.define_metric("AUC_score", summary="max")
   wandb.define_metric("F1_score", summary="max")
   wandb.define_metric("accuracy_result", summary="max")
+  
+  wandb.finish()
+  
   return auc_result, f1_score_result, accuracy_result
 
 
