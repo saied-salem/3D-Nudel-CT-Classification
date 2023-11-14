@@ -2,7 +2,8 @@ import torch
 import json
 import argparse, os
 import wandb
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, classification_report
+
 from torch import optim
 from medmnist import NoduleMNIST3D
 from utils import getNetworkArch,  creatConfutionMatrix, creatPredictionTable
@@ -96,6 +97,8 @@ def init(model_name):
   wandb.define_metric("accuracy_result", summary="max")
   
   wandb.finish()
+  
+  print(classification_report(y, y_pred_labels, target_names=['benign','maliganit'], digits=4))
   
   return auc_result, f1_score_result, accuracy_result
 
