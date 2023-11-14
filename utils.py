@@ -26,16 +26,7 @@ from monai.transforms import (
     ToTensor,
 )
 
-def creatPredictionTableAndConfutionMatrix(config, loader, y, y_pred):
-  pred_table = {
-    'Images': [ wandb.Video(np.transpose(img*255, (3, 0, 1,2)).astype(np.uint8))  for img,_ in iter(loader.dataset)],
-    "Pred_labels": [ "malignant" if label== 1 else "benign"  for label in  y_pred ],
-    "True_labels": [ "malignant" if label== 1 else "benign"  for label in  y ]
-}
-  # print("HHHHHHHHHHHH")
-  wandb_pred_table = wandb.Table(dataframe=pd.DataFrame(pred_table))
-  wandb.log({"pred_table":wandb_pred_table})
-
+def creatConfutionMatrix(y, y_pred):
   disp = ConfusionMatrixDisplay.from_predictions(y_true=y, y_pred=y_pred,
                                                    display_labels=['Benign','Malignant'],
                                                    normalize='pred')
@@ -46,6 +37,18 @@ def creatPredictionTableAndConfutionMatrix(config, loader, y, y_pred):
   fig.show()
   fig.autofmt_xdate(rotation=45)
   wandb.log({'confusion_matrix': disp.figure_})
+
+def creatPredictionTable(config, loader, y, y_pred):
+  pred_table = {
+    'Images': [ wandb.Video(np.transpose(img*255, (3, 0, 1,2)).astype(np.uint8))  for img,_ in iter(loader.dataset)],
+    "Pred_labels": [ "malignant" if label== 1 else "benign"  for label in  y_pred ],
+    "True_labels": [ "malignant" if label== 1 else "benign"  for label in  y ]
+}
+  # print("HHHHHHHHHHHH")
+  wandb_pred_table = wandb.Table(dataframe=pd.DataFrame(pred_table))
+  wandb.log({"pred_table":wandb_pred_table})
+
+  
 
 
 def logBestMertics(best_f1_score_metric, best_AUC_metric, best_acc_metric ):

@@ -1,0 +1,53 @@
+
+program: train.py
+
+method: random
+
+metric:
+  goal: maximize
+  name: AUC_score
+  
+parameters:
+  arch:
+
+    values:
+      - 'EfficientNetBN'
+      - 'resnet10'
+      - 'resnet18'
+      - 'resnet34'
+      - 'SEResNet50'
+      - 'SEResNeXt50'
+
+  augment:
+    distribution: categorical
+    values:
+      - "true"
+      - "false"
+      
+  batch_size:
+    distribution: int_uniform
+    max: 32
+    min: 256
+    
+  lr:
+    distribution: log_uniform_values
+    max: 5e-3
+    min: 5e-4
+          
+  optimizer:
+    distribution: categorical
+    values:
+      - 'AdamW'
+      - 'SGD'
+      - 'RMSprop'
+      
+  weight_decay:
+    distribution: log_uniform_values
+    max: 1e-2
+    min: 1e-4
+      
+  weighted_loss:
+    distribution: categorical
+    values:
+      - "true"
+      - "false"

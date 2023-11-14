@@ -14,7 +14,7 @@ from monai.metrics import ROCAUCMetric
 import torch
 from torch import optim
 from sklearn.metrics import accuracy_score, f1_score
-from utils import (getDataset, creatPredictionTableAndConfutionMatrix,
+from utils import (getDataset, creatConfutionMatrix, creatPredictionTable
                    logBestMertics, logTraindModel, getNetworkArch,transformsType)
 from evaluate import evaluate
 
@@ -50,6 +50,7 @@ def parse_args(default_config):
     argparser.add_argument('--lr', type=float, default=default_config['lr'], help='learning rate')
     argparser.add_argument('--arch', type=str, default=default_config['arch'], help='Network architecture')
     argparser.add_argument('--optimizer', type=str, default=default_config['optimizer'], help='optimizer')
+    argparser.add_argument('--weight_decay', type=float, default=default_config['weight_decay'], help='weight_decay of the optimzer')
     argparser.add_argument('--augment', type=t_or_f, default=default_config['augment'], help='Use image augmentation')
     argparser.add_argument('--seed', type=int, default=default_config['seed'], help='random seed')
     argparser.add_argument('--log_preds', type=t_or_f, default=default_config['log_preds'], help='log model predictions')
@@ -104,7 +105,7 @@ def train(config):
     Images scaling:  {train_loader.dataset.imgs[0].shape}
     Mixed Precision: {config.mixed_precision}
 ''')
-  optimizer = getattr(optim, config.optimizer)(model.parameters(), lr=config.lr)
+  optimizer = getattr(optim, config.optimizer)(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
   loss_function = torch.nn.BCEWithLogitsLoss(pos_weight=pos_weight)
   scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer,'max',min_lr=1e-6,
               factor= config.scheduler_reducing_factor, patience=config.scheduler_lr_patience)
@@ -164,15 +165,18 @@ def train(config):
         'accuracy_result':np.round(accuracy_result,3) ,
 
     })
+    
+  dataset = NoduleMNIST3D(split=split_type, download=True, as_rgb=config.as_rgb)
+  model.load_state_dict(torch.load(model_path))
+  loader = DataLoader(dataset,batch_size=config.batch_size, num_workers=os.cpu_count() )
+  auc_result, f1_score_result, accuracy_result, y, y_pred = evaluate(model,device,config, loader,sigmoid, threshoulding, metrics=[auc_object,f1_score])
   if config.log_preds:
     split_type = config.log_pred_type
     # print(split_type)
-    dataset = NoduleMNIST3D(split=split_type, download=True, as_rgb=config.as_rgb)
-    loader = DataLoader(dataset,batch_size=config.batch_size, num_workers=os.cpu_count() )
-    auc_result, f1_score_result, accuracy_result, y, y_pred = evaluate(model,device,config, loader,sigmoid, threshoulding, metrics=[auc_object,f1_score])
-    creatPredictionTableAndConfutionMatrix(config, loader, y, y_pred)
-
+    creatPredictionTable(config, loader, y, y_pred)
+    
   wandb.log({"roc_curve" : wandb.plot.roc_curve(y, y_pred, labels=['Benign','Malignant'])})
+  creatConfutionMatrix(y, y_pred)
   logBestMertics(best_f1_score_metric, best_AUC_metric, best_acc_metric )
   logTraindModel(saved_model_path, config)
   wandb.finish()
