@@ -100,7 +100,7 @@ def train(config):
     Batch size:      {config.batch_size}
     Learning rate:   {config.lr}
     Training size:   {n_train}
-    Benign sampels:   {pos_weight}
+    Benign sampels:   {n_benign}
     Malignant sampels:   {n_malignant}
     Validation size: {n_val}
     Device:          {device.type}
