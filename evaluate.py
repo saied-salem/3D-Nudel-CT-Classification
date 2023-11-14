@@ -13,6 +13,21 @@ from monai.transforms import Activations, AsDiscrete
 from monai.utils import set_determinism
 
 
+default_config = SimpleNamespace(
+    framework="pytorch",
+    batch_size=256,
+    mixed_precision=False,
+    arch= None,
+    optimizer="AdamW",
+    weight_decay=5e-3,
+    seed=42,
+    log_preds=True,
+    log_pred_type="val",
+    as_rgb=True,
+    weighted_loss=False,
+    scheduler_reducing_factor=0.8,
+    scheduler_lr_patience=4
+)
 
 def t_or_f(arg):
     ua = str(arg).upper()
@@ -22,9 +37,11 @@ def t_or_f(arg):
 def parse_args():
     argparser = argparse.ArgumentParser(description='Process hyper-parameters')
     argparser.add_argument('--model_name', type=str, help='Enter the name of the model you need to evaluate')
+    argparser.add_argument('--offline_mode', type=t_or_f, help='whether to use model config from wandb artifacts or local')
+
     args = argparser.parse_args()
 
-    return args.model_name
+    return args.model_name, args.offline_mode
 
 @torch.inference_mode()
 def evaluate(model, device, config, val_loader,sigmoid, threshoulding, metrics):
@@ -56,25 +73,32 @@ def evaluate(model, device, config, val_loader,sigmoid, threshoulding, metrics):
     model.train()
   return auc_result, f1_score_result, acc_results, y, y_pred, y_pred_labels
 
-def init(model_name):
-  run = wandb.init(project='NoduleMNIST', entity='saied-salem',
-                              resume='allow', job_type="evaluation")
+def init(model_name, offline):
+  curr_folder = os.getcwd()
+  config = default_config
+  model_name_path =  [ path for path in os.listdir(curr_folder)  if 'pth' in path][0]
+  model_path = os.path.join(curr_folder,model_name_path)
+  if not offline:
+    run = wandb.init(project='NoduleMNIST', entity='saied-salem',
+                                resume='allow', job_type="evaluation")
 
 
-  artifact = run.use_artifact(model_name,type='model')
-  artifact_dir =artifact.download()
-  print(artifact_dir)
-  model_path = os.listdir(artifact_dir)[0]
-  producer_run = artifact.logged_by()
-  wandb.config.update(producer_run.config)
-  config = wandb.config
-  set_determinism(config['seed'],use_deterministic_algorithms=False)
+    artifact = run.use_artifact(model_name,type='model')
+    artifact_dir =artifact.download()
+    print(artifact_dir)
+    model_name_path = os.listdir(artifact_dir)[0]
+    model_path = os.path.join(artifact_dir,model_name_path)
+    producer_run = artifact.logged_by()
+    wandb.config.update(producer_run.config)
+    config = wandb.config
+
+  set_determinism(config.seed,use_deterministic_algorithms=False)
 
   device =torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   input_channels = 3 if config.as_rgb else 1
   model= getNetworkArch(config.arch, input_channels).to(device)
-  model.load_state_dict(torch.load(model_path))
-  optimizer = getattr(optim, config.optimizer)(model.parameters(), lr=config.lr)
+  model.load_state_dict(torch.load(model_path, map_location=device))
+
   sigmoid = Activations(sigmoid=True)
   threshoulding = AsDiscrete(threshold=0.5)
   auc_object = ROCAUCMetric()
@@ -133,8 +157,8 @@ def evaluate_working(model, device, config, val_loader,sigmoid, threshoulding, m
   return auc_result, f1_score_result, acc_results, y, y_pred
 
 if __name__ == '__main__':
-    model_name = parse_args()
-    init(model_name)
+    model_name, offline = parse_args()
+    init(model_name,offline)
     
 
 
