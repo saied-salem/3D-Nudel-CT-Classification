@@ -11,20 +11,19 @@ from monai.data import DataLoader
 from monai.metrics import ROCAUCMetric
 from monai.transforms import Activations, AsDiscrete
 from monai.utils import set_determinism
+from types import SimpleNamespace
+
 
 
 default_config = SimpleNamespace(
     framework="pytorch",
     batch_size=256,
     mixed_precision=False,
-    arch= None,
-    optimizer="AdamW",
-    weight_decay=5e-3,
+    arch= 'resnet10',
     seed=42,
     log_preds=True,
     log_pred_type="val",
     as_rgb=True,
-    weighted_loss=False,
     scheduler_reducing_factor=0.8,
     scheduler_lr_patience=4
 )
@@ -36,8 +35,8 @@ def t_or_f(arg):
 
 def parse_args():
     argparser = argparse.ArgumentParser(description='Process hyper-parameters')
-    argparser.add_argument('--model_name', type=str, help='Enter the name of the model you need to evaluate')
-    argparser.add_argument('--offline_mode', type=t_or_f, help='whether to use model config from wandb artifacts or local')
+    argparser.add_argument('--model_name', default=None, type=str, help='Enter the name of the model you need to evaluate')
+    argparser.add_argument('--offline_mode', default=False, type=t_or_f, help='whether to use model config from wandb artifacts or local')
 
     args = argparser.parse_args()
 
@@ -74,11 +73,16 @@ def evaluate(model, device, config, val_loader,sigmoid, threshoulding, metrics):
   return auc_result, f1_score_result, acc_results, y, y_pred, y_pred_labels
 
 def init(model_name, offline):
-  curr_folder = os.getcwd()
-  config = default_config
-  model_name_path =  [ path for path in os.listdir(curr_folder)  if 'pth' in path][0]
-  model_path = os.path.join(curr_folder,model_name_path)
-  if not offline:
+  model_path= None
+  config= default_config
+  if offline:
+    curr_folder = os.getcwd()
+    config = default_config
+    model_name_path =  [ path for path in os.listdir(curr_folder)  if 'pth' in path][0]
+    model_path = os.path.join(curr_folder,model_name_path)
+    network_arch = model_name_path.split('_')[0]
+    config.arch = network_arch
+  else:
     run = wandb.init(project='NoduleMNIST', entity='saied-salem',
                                 resume='allow', job_type="evaluation")
 
@@ -97,6 +101,7 @@ def init(model_name, offline):
   device =torch.device('cuda' if torch.cuda.is_available() else 'cpu')
   input_channels = 3 if config.as_rgb else 1
   model= getNetworkArch(config.arch, input_channels).to(device)
+  print(model_path)
   model.load_state_dict(torch.load(model_path, map_location=device))
 
   sigmoid = Activations(sigmoid=True)
