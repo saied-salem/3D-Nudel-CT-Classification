@@ -8,7 +8,7 @@
     "mixed_precision": true,
     "arch": "SEResNet50",
     "optimizer": "AdamW",
-	"weight_decay": 5e-3
+	"weight_decay": 5e-3,
     "seed": 42,
     "log_preds":true,
     "log_pred_type": "val",

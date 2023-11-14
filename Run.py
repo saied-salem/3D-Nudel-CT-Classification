@@ -14,7 +14,7 @@ from monai.metrics import ROCAUCMetric
 import torch
 from torch import optim
 from sklearn.metrics import accuracy_score, f1_score
-from utils import (getDataset, creatConfutionMatrix, creatPredictionTable
+from utils import (getDataset, creatConfutionMatrix, creatPredictionTable,
                    logBestMertics, logTraindModel, getNetworkArch,transformsType)
 from evaluate import evaluate
 
