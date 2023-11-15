@@ -76,12 +76,18 @@ def init(model_name, offline):
   model_path= None
   config= default_config
   if offline:
-    curr_folder = os.getcwd()
+    run = wandb.init(project='Testing_NoduleMNIST', resume='allow',
+                                        anonymous='must', job_type="evaluation")
+    artifact_dir ='/content/artifacts'
     config = default_config
-    model_name_path =  [ path for path in os.listdir(curr_folder)  if 'pth' in path][0]
-    model_path = os.path.join(curr_folder,model_name_path)
-    network_arch = model_name_path.split('_')[0]
-    config.arch = network_arch
+    network_arch_version =os.listdir(artifact_dir)[0]
+    model_path_dir = os.path.join(artifact_dir,network_arch_version)
+    model_path_name = os.listdir(model_path_dir)[0]
+    model_path = os.path.join(model_path_dir,model_path_name)
+    print(model_path)
+    # model_path = os.path.join(artifact_dir,model_name_path)
+    # network_arch = model_name_path.split(':')[0]
+    config.arch = network_arch_version.split(':')[0]
   else:
     run = wandb.init(project='NoduleMNIST', entity='saied-salem',
                                 resume='allow', job_type="evaluation")
@@ -92,6 +98,7 @@ def init(model_name, offline):
     print(artifact_dir)
     model_name_path = os.listdir(artifact_dir)[0]
     model_path = os.path.join(artifact_dir,model_name_path)
+    print(artifact_dir)
     producer_run = artifact.logged_by()
     wandb.config.update(producer_run.config)
     config = wandb.config
