@@ -120,8 +120,7 @@ def init(model_name, offline):
   auc_result, f1_score_result, accuracy_result, y, y_pred, y_pred_labels = evaluate(model,device,config, loader, sigmoid, threshoulding, metrics=[auc_object,f1_score])
 
   creatConfutionMatrix(y, y_pred_labels)
-  if False:
-    print("inside config.log_preds:")
+  if config.log_preds:
     creatPredictionTable(config, loader, y, y_pred_labels)
 
   # wandb.log({"roc_curve" : wandb.plot.roc_curve(y, y_pred, labels=['Benign','Malignant'])})
