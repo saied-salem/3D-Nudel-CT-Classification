@@ -1,14 +1,14 @@
 
 {
     "framework": "pytorch",
-    "batch_size": 256,
+    "batch_size": 64,
     "augment": true,
     "epochs": 50,
     "lr": 1e-3,
     "mixed_precision": true,
-    "arch": "SEResNet50",
+    "arch": "EfficientNetBN",
     "optimizer": "AdamW",
-	"weight_decay": 5e-3,
+	  "weight_decay": 1e-2,
     "seed": 42,
     "log_preds":true,
     "log_pred_type": "val",

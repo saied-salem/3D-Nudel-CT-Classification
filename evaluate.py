@@ -112,8 +112,10 @@ def init(model_name, offline):
   loader = DataLoader(dataset,batch_size=config.batch_size, num_workers=os.cpu_count() )
   auc_result, f1_score_result, accuracy_result, y, y_pred, y_pred_labels = evaluate(model,device,config, loader, sigmoid, threshoulding, metrics=[auc_object,f1_score])
 
-  creatPredictionTable(config, loader, y, y_pred_labels)
   creatConfutionMatrix(y, y_pred_labels)
+  if False:
+    print("inside config.log_preds:")
+    creatPredictionTable(config, loader, y, y_pred_labels)
 
   # wandb.log({"roc_curve" : wandb.plot.roc_curve(y, y_pred, labels=['Benign','Malignant'])})
   run.log({
